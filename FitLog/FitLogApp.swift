@@ -1,10 +1,3 @@
-//
-//  FitLogApp.swift
-//  FitLog
-//
-//  Created by Lucas Chaves Pinheiro on 13/05/26.
-//
-
 import SwiftUI
 import SwiftData
 
@@ -12,7 +5,10 @@ import SwiftData
 struct FitLogApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Exercise.self,
+            Workout.self,
+            WorkoutExercise.self,
+            ExerciseSet.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
