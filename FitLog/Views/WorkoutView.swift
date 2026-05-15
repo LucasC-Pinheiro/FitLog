@@ -9,7 +9,6 @@ struct WorkoutView: View {
     @State private var workoutName = "Meu Treino"
     @State private var selectedExercises: [WorkoutExercise] = []
     @State private var showingExercisePicker = false
-    @State private var startTime = Date()
     @State private var elapsedSeconds = 0
     @State private var timer: Timer? = nil
 
@@ -25,27 +24,46 @@ struct WorkoutView: View {
                 Color.black.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-
-                    // header
+                    // Header
                     HStack {
-                        Button("Cancelar") { dismiss() }
-                            .foregroundColor(.red)
-
+                        Button(action: { dismiss() }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: AppIcons.close)
+                                Text("Descartar")
+                            }
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(AppTheme.Colors.danger)
+                        }
+                        
                         Spacer()
-
-                        Text(elapsedFormatted)
-                            .font(.system(size: 16, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.green)
-
+                        
+                        VStack(spacing: 2) {
+                            Text(elapsedFormatted)
+                                .font(.system(size: 18, weight: .bold, design: .monospaced))
+                                .foregroundColor(AppTheme.Colors.success)
+                            Text("tempo")
+                                .font(.system(size: 9))
+                                .foregroundColor(.gray)
+                        }
+                        
                         Spacer()
-
-                        Button("Salvar") { saveWorkout() }
-                            .foregroundColor(.purple)
-                            .fontWeight(.semibold)
+                        
+                        Button(action: { saveWorkout() }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: AppIcons.save)
+                                Text("Salvar")
+                            }
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(AppTheme.Colors.primary)
+                            .cornerRadius(AppTheme.Radius.medium)
+                        }
                     }
                     .padding()
 
-                    // nome do treino
+                    // Workout Name
                     TextField("Nome do treino", text: $workoutName)
                         .font(.system(size: 22, weight: .bold))
                         .foregroundColor(.white)
@@ -54,42 +72,45 @@ struct WorkoutView: View {
 
                     Divider().background(Color.white.opacity(0.1))
 
-                    // lista de exercícios
+                    // Exercises List
                     ScrollView {
                         VStack(spacing: 12) {
-                            ForEach(Array(selectedExercises.enumerated()), id: \.element.id) { index, we in
+                            ForEach(Array(selectedExercises.enumerated()), id: \.element.id) { _, we in
                                 WorkoutExerciseCard(workoutExercise: we)
                             }
 
-                            // botão adicionar exercício
+                            // Add Exercise Button
                             Button(action: { showingExercisePicker = true }) {
                                 HStack {
-                                    Image(systemName: "plus.circle.fill")
+                                    Image(systemName: AppIcons.addExercise)
                                     Text("Adicionar exercício")
                                         .font(.system(size: 15, weight: .medium))
                                 }
-                                .foregroundColor(.purple)
+                                .foregroundColor(AppTheme.Colors.primary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
-                                .background(Color.purple.opacity(0.1))
-                                .cornerRadius(14)
+                                .background(AppTheme.Colors.primaryDim)
+                                .cornerRadius(AppTheme.Radius.large)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                                    RoundedRectangle(cornerRadius: AppTheme.Radius.large)
+                                        .stroke(AppTheme.Colors.primaryGlow, lineWidth: 1)
                                 )
                             }
                             .padding(.top, 4)
 
-                            // botão finalizar
+                            // Finish Workout Button
                             if !selectedExercises.isEmpty {
                                 Button(action: saveWorkout) {
-                                    Text("Finalizar treino ✓")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.white)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 16)
-                                        .background(Color.purple)
-                                        .cornerRadius(16)
+                                    HStack(spacing: 4) {
+                                        Image(systemName: AppIcons.checkmark)
+                                        Text("Finalizar treino")
+                                    }
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(AppTheme.Colors.primary)
+                                    .cornerRadius(AppTheme.Radius.large)
                                 }
                             }
                         }
@@ -128,107 +149,7 @@ struct WorkoutView: View {
     }
 }
 
-// MARK: - Card de exercício no treino
-struct WorkoutExerciseCard: View {
-    @Bindable var workoutExercise: WorkoutExercise
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(workoutExercise.exercise.name)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                Spacer()
-                Text(workoutExercise.exercise.muscleGroup)
-                    .font(.system(size: 11))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.purple.opacity(0.15))
-                    .foregroundColor(.purple)
-                    .cornerRadius(8)
-            }
-
-            // header das colunas
-            HStack {
-                Text("Série").frame(width: 36)
-                Text("KG").frame(maxWidth: .infinity)
-                Text("Reps").frame(maxWidth: .infinity)
-                Text("✓").frame(width: 28)
-            }
-            .font(.system(size: 11, weight: .medium))
-            .foregroundColor(.gray)
-
-            // séries
-            ForEach(Array(workoutExercise.sets.enumerated()), id: \.offset) { index, set in
-                SetRow(set: set, index: index + 1)
-            }
-
-            // botão adicionar série
-            Button(action: {
-                workoutExercise.sets.append(ExerciseSet(weight: 0, reps: 0))
-            }) {
-                Text("+ série")
-                    .font(.system(size: 13))
-                    .foregroundColor(.purple)
-            }
-        }
-        .padding(14)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-        )
-    }
-}
-
-// MARK: - Linha de série
-struct SetRow: View {
-    @Bindable var set: ExerciseSet
-    let index: Int
-
-    var body: some View {
-        HStack {
-            Text("\(index)")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.gray)
-                .frame(width: 36)
-
-            TextField("0", value: $set.weight, format: .number)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.center)
-                .padding(.vertical, 6)
-                .background(Color.white.opacity(0.07))
-                .cornerRadius(8)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-
-            TextField("0", value: $set.reps, format: .number)
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.center)
-                .padding(.vertical, 6)
-                .background(Color.white.opacity(0.07))
-                .cornerRadius(8)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-
-            Button(action: { set.isCompleted.toggle() }) {
-                Circle()
-                    .fill(set.isCompleted ? Color.green : Color.white.opacity(0.1))
-                    .frame(width: 24, height: 24)
-                    .overlay(
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
-                            .opacity(set.isCompleted ? 1 : 0.3)
-                    )
-            }
-            .frame(width: 28)
-        }
-    }
-}
-
-// MARK: - Picker de exercícios
+// MARK: - Exercise Picker
 struct ExercisePickerView: View {
     let exercises: [Exercise]
     let onSelect: (Exercise) -> Void
@@ -255,7 +176,7 @@ struct ExercisePickerView: View {
                                         .font(.system(size: 13, weight: .medium))
                                         .padding(.horizontal, 14)
                                         .padding(.vertical, 7)
-                                        .background(selectedGroup == group ? Color.purple : Color.white.opacity(0.08))
+                                        .background(selectedGroup == group ? AppTheme.Colors.primary : AppTheme.Colors.surface)
                                         .foregroundColor(.white)
                                         .cornerRadius(20)
                                 }
@@ -278,7 +199,7 @@ struct ExercisePickerView: View {
                                     .foregroundColor(.gray)
                             }
                         }
-                        .listRowBackground(Color.white.opacity(0.05))
+                        .listRowBackground(AppTheme.Colors.surface)
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
@@ -290,7 +211,7 @@ struct ExercisePickerView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Fechar") { dismiss() }
-                        .foregroundColor(.purple)
+                        .foregroundColor(AppTheme.Colors.primary)
                 }
             }
         }

@@ -2,9 +2,37 @@ import SwiftUI
 import SwiftData
 
 struct HomeView: View {
-    @state private var showingWorkout = false
+    @State private var showingWorkout = false
     @Query private var workouts: [Workout]
     @Environment(\.modelContext) private var modelContext
+    @AppStorage("userName") private var userName = "Atleta"
+
+    var motivationalPhrase: String {
+        let phrases = [
+            "Cada série te deixa mais forte 💪",
+            "O progresso é a vitória 🏆",
+            "Seu corpo agradece o esforço 🔥",
+            "Hoje é dia de quebrar recordes 📈",
+            "Consistência é a chave 🔑",
+            "Você é mais forte do que pensa 💯",
+            "Cada repetição conta 📊",
+            "Vamo bombar! 🎯",
+            "Seu futuro self vai agradecer 🚀",
+            "Treinar é se amar 💚",
+            "Dor hoje, ganho amanhã 💪",
+            "Você não é igual a ontem 🌟"
+        ]
+        return phrases.randomElement() ?? "Vamo treinar! 💪"
+    }
+
+    var greeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<12: return "Bom dia, \(userName)"
+        case 12..<18: return "Boa tarde, \(userName)"
+        default: return "Boa noite, \(userName)"
+        }
+    }
     
     var totalThisWeek: Int {
         let calendar = Calendar.current
@@ -45,23 +73,24 @@ struct HomeView: View {
                         // greeting
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Bom dia 👋")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.gray)
-                                Text("FitLog")
-                                    .font(.system(size: 24, weight: .bold))
+                                Text("\(greeting)!")
+                                    .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.white)
+                                Text(motivationalPhrase)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.gray)
                             }
                             Spacer()
-                            Circle()
-                                .fill(LinearGradient(colors: [.purple, .purple.opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                .frame(width: 44, height: 44)
-                                .overlay(
-                                    Text("F")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(.white)
-                                )
-                        }
+                            NavigationLink(destination: ProfileView()) {
+                                Circle()
+                                    .fill(LinearGradient(colors: [.purple, .purple.opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                    .frame(width: 44, height: 44)
+                                    .overlay(
+                                        Text(String(userName.prefix(1)).uppercased())
+                                            .font(.system(size: 18, weight: .bold))
+                                            .foregroundColor(.white)
+                                    )
+                            }                        }
                         .padding(.horizontal)
                         
                         // streak card
@@ -74,7 +103,12 @@ struct HomeView: View {
                                 )
                             
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("🔥 Sequência atual")
+                                HStack(spacing: 4) {
+                                    Image(systemName: "flame.fill")
+                                        .foregroundColor(.orange)
+                                        .font(.system(size: 16))
+                                    Text("Sequência atual")
+                                }
                                     .font(.system(size: 12))
                                     .foregroundColor(.purple.opacity(0.8))
                                 Text("\(currentStreak) dias")
@@ -83,18 +117,16 @@ struct HomeView: View {
                                 
                                 // week days
                                 HStack(spacing: 6) {
-                                    ForEach(weekDays(), id: \.0) { day, hasWorkout, isToday in
-                                        VStack(spacing: 4) {
-                                            Circle()
-                                                .fill(isToday ? Color.purple : (hasWorkout ? Color.purple.opacity(0.6) : Color.white.opacity(0.1)))
-                                                .frame(width: 28, height: 28)
-                                                .overlay(
-                                                    Text(day)
-                                                        .font(.system(size: 9, weight: .bold))
-                                                        .foregroundColor(.white)
-                                                )
-                                                .shadow(color: isToday ? .purple : .clear, radius: 4)
-                                        }
+                                    ForEach(weekDays(), id: \.3) { day, hasWorkout, isToday, _ in
+                                        Circle()
+                                            .fill(isToday ? Color.purple : (hasWorkout ? Color.purple.opacity(0.6) : Color.white.opacity(0.1)))
+                                            .frame(width: 28, height: 28)
+                                            .overlay(
+                                                Text(day)
+                                                    .font(.system(size: 9, weight: .bold))
+                                                    .foregroundColor(.white)
+                                            )
+                                            .shadow(color: isToday ? .purple : .clear, radius: 4)
                                     }
                                 }
                             }
@@ -155,7 +187,9 @@ struct HomeView: View {
                                 RoundedRectangle(cornerRadius: 16)
                                     .fill(Color.white.opacity(0.05))
                                 VStack(spacing: 8) {
-                                    Text("🏋️")
+                                    Image(systemName: AppIcons.exercises)
+                                        .font(.system(size: 32))
+                                        .foregroundColor(AppTheme.Colors.primary)
                                         .font(.system(size: 32))
                                     Text("Nenhum treino ainda")
                                         .foregroundColor(.gray)
@@ -195,46 +229,16 @@ struct HomeView: View {
         }
     }
     
-    func weekDays() -> [(String, Bool, Bool)] {
-        let days = ["S", "T", "Q", "Q", "S", "S", "D"]
+    func weekDays() -> [(String, Bool, Bool, Int)] {
+        let days = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"]
         let calendar = Calendar.current
         let today = calendar.component(.weekday, from: Date())
         let workoutDays = Set(workouts.map { calendar.component(.weekday, from: $0.date) })
         
         return days.enumerated().map { index, day in
-            let weekday = index + 1
-            return (day, workoutDays.contains(weekday), weekday == today)
-        }
-    }
-}
+                return (day, workoutDays.contains(index + 1), index + 1 == today, index)
 
-struct StatCard: View {
-    let title: String
-    let value: String
-    let subtitle: String
-    
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
-            VStack(spacing: 4) {
-                Text(title)
-                    .font(.system(size: 11))
-                    .foregroundColor(.gray)
-                Text(value)
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(.white)
-                Text(subtitle)
-                    .font(.system(size: 11))
-                    .foregroundColor(.gray)
-            }
-            .padding(.vertical, 16)
         }
-        .frame(maxWidth: .infinity)
     }
 }
 

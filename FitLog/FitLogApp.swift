@@ -3,6 +3,8 @@ import SwiftData
 
 @main
 struct FitLogApp: App {
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Exercise.self,
@@ -21,7 +23,11 @@ struct FitLogApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if hasCompletedOnboarding {
+                ContentView()
+            } else {
+                OnboardingView()
+            }
         }
         .modelContainer(sharedModelContainer)
     }

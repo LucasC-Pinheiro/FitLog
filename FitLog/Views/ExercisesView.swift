@@ -1,10 +1,3 @@
-//
-//  ExercisesView.swift
-//  FitLog
-//
-//  Created by Lucas Chaves Pinheiro on 13/05/26.
-//
-
 import SwiftUI
 import SwiftData
 
@@ -16,9 +9,7 @@ struct ExercisesView: View {
     @State private var selectedGroup = "Todos"
     
     var filteredExercises: [Exercise] {
-        if selectedGroup == "Todos" {
-            return exercises
-        }
+        if selectedGroup == "Todos" { return exercises }
         return exercises.filter { $0.muscleGroup == selectedGroup }
     }
     
@@ -26,9 +17,7 @@ struct ExercisesView: View {
         NavigationView {
             ZStack {
                 Color.black.ignoresSafeArea()
-                
                 VStack(spacing: 0) {
-                    // filtro de grupos musculares
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             ForEach(muscleGroups, id: \.self) { group in
@@ -37,7 +26,7 @@ struct ExercisesView: View {
                                         .font(.system(size: 13, weight: .medium))
                                         .padding(.horizontal, 14)
                                         .padding(.vertical, 7)
-                                        .background(selectedGroup == group ? Color.purple : Color.white.opacity(0.08))
+                                        .background(selectedGroup == group ? AppTheme.Colors.primary : AppTheme.Colors.surface)
                                         .foregroundColor(.white)
                                         .cornerRadius(20)
                                 }
@@ -47,15 +36,15 @@ struct ExercisesView: View {
                         .padding(.vertical, 10)
                     }
                     
-                    // lista de exercicios
                     if filteredExercises.isEmpty {
                         Spacer()
                         VStack(spacing: 12) {
-                            Text("🏋️")
+                            Image(systemName: AppIcons.gym)
                                 .font(.system(size: 48))
+                                .foregroundColor(AppTheme.Colors.primary)
                             Text("Nenhum exercício ainda")
                                 .foregroundColor(.gray)
-                            Text("Adicione seu primeiro exercício!")
+                            Text("Toque no + para adicionar!")
                                 .font(.caption)
                                 .foregroundColor(.gray.opacity(0.7))
                         }
@@ -63,7 +52,7 @@ struct ExercisesView: View {
                     } else {
                         List(filteredExercises) { exercise in
                             ExerciseRow(exercise: exercise)
-                                .listRowBackground(Color.white.opacity(0.05))
+                                .listRowBackground(AppTheme.Colors.surface)
                         }
                         .listStyle(.plain)
                         .scrollContentBackground(.hidden)
@@ -77,7 +66,7 @@ struct ExercisesView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: addSampleExercises) {
                         Image(systemName: "plus")
-                            .foregroundColor(.purple)
+                            .foregroundColor(AppTheme.Colors.primary)
                     }
                 }
             }
@@ -86,7 +75,6 @@ struct ExercisesView: View {
     
     func addSampleExercises() {
         guard exercises.isEmpty else { return }
-        
         let samples = [
             Exercise(name: "Supino Reto", muscleGroup: "Peito", equipment: "Barra", type: "Composto"),
             Exercise(name: "Crossover", muscleGroup: "Peito", equipment: "Cabo", type: "Isolado"),
@@ -99,55 +87,6 @@ struct ExercisesView: View {
             Exercise(name: "Tríceps Pulley", muscleGroup: "Tríceps", equipment: "Cabo", type: "Isolado"),
         ]
         samples.forEach { modelContext.insert($0) }
-    }
-}
-
-struct ExerciseRow: View {
-    let exercise: Exercise
-    
-    var muscleColor: Color {
-        switch exercise.muscleGroup {
-        case "Peito": return .purple
-        case "Costas": return .blue
-        case "Pernas": return .green
-        case "Ombro": return .orange
-        case "Bíceps": return .pink
-        case "Tríceps": return .yellow
-        default: return .gray
-        }
-    }
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(muscleColor.opacity(0.15))
-                .frame(width: 40, height: 40)
-                .overlay(
-                    Text(String(exercise.name.prefix(1)))
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(muscleColor)
-                )
-            
-            VStack(alignment: .leading, spacing: 3) {
-                Text(exercise.name)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.white)
-                Text("\(exercise.muscleGroup) · \(exercise.type)")
-                    .font(.system(size: 12))
-                    .foregroundColor(.gray)
-            }
-            
-            Spacer()
-            
-            Text(exercise.equipment)
-                .font(.system(size: 11, weight: .medium))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.white.opacity(0.08))
-                .foregroundColor(.gray)
-                .cornerRadius(8)
-        }
-        .padding(.vertical, 4)
     }
 }
 
