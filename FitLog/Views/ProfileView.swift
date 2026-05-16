@@ -1,6 +1,10 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - Profile View
+/// Perfil do usuário com design premium
+/// Melhorias: Avatar animado, cards de stats modernos, conquistas visuais,
+/// meta semanal interativa, volume total destacado, animações de entrada
 struct ProfileView: View {
     @Query private var workouts: [Workout]
     @Query private var exercises: [Exercise]
@@ -8,9 +12,14 @@ struct ProfileView: View {
     @AppStorage("weeklyGoal") private var weeklyGoal = 4
     @State private var showingEditName = false
     @State private var tempName = ""
+    @State private var isVisible = false
 
     var totalVolume: Double {
         workouts.flatMap { $0.exercises }.flatMap { $0.sets }.reduce(0.0) { $0 + ($1.weight * Double($1.reps)) }
+    }
+
+    var totalDuration: Int {
+        workouts.reduce(0) { $0 + $1.duration }
     }
 
     var currentStreak: Int {
@@ -23,7 +32,9 @@ struct ProfileView: View {
             if workoutDay == checkDate {
                 streak += 1
                 checkDate = Calendar.current.date(byAdding: .day, value: -1, to: checkDate)!
-            } else { break }
+            } else if workoutDay < checkDate {
+                break
+            }
         }
         return streak
     }
@@ -33,245 +44,450 @@ struct ProfileView: View {
         return workouts.filter { $0.date >= startOfWeek }.count
     }
 
-    var level: String {
+    var level: (name: String, icon: String, color: Color) {
         switch workouts.count {
-        case 0..<5: return "Iniciante"
-        case 5..<20: return "Intermediário"
-        case 20..<50: return "Avançado"
-        default: return "Elite"
+        case 0..<5: return ("Iniciante", "leaf.fill", AppTheme.Colors.success)
+        case 5..<20: return ("Intermediário", "flame.fill", AppTheme.Colors.warning)
+        case 20..<50: return ("Avançado", "bolt.fill", AppTheme.Colors.primary)
+        default: return ("Elite", "crown.fill", Color.yellow)
         }
     }
 
+    var weeklyProgress: Double {
+        min(Double(thisWeekCount) / Double(weeklyGoal), 1.0)
+    }
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
+                // Background
+                backgroundView
 
-                ScrollView {
-                    VStack(spacing: 16) {
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: AppTheme.Spacing.extraLarge) {
+                        // Profile header
+                        profileHeader
+                            .staggeredAppear(index: 0, isVisible: isVisible)
 
-                        VStack(spacing: 12) {
-                            Circle()
-                                .fill(LinearGradient(
-                                    colors: [.purple, .purple.opacity(0.6)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ))
-                                .frame(width: 80, height: 80)
-                                .overlay(
-                                    Text(String(userName.prefix(1)).uppercased())
-                                        .font(.system(size: 32, weight: .bold))
-                                        .foregroundColor(.white)
-                                )
-                                .shadow(color: .purple.opacity(0.4), radius: 12)
+                        // Stats cards
+                        statsSection
+                            .staggeredAppear(index: 1, isVisible: isVisible)
 
-                            Button(action: {
-                                tempName = userName
-                                showingEditName = true
-                            }) {
-                                HStack(spacing: 6) {
-                                    Text(userName)
-                                        .font(.system(size: 22, weight: .bold))
-                                        .foregroundColor(.white)
-                                    Image(systemName: AppIcons.edit)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.gray)
-                                }
-                            }
+                        // Volume card
+                        volumeCard
+                            .staggeredAppear(index: 2, isVisible: isVisible)
 
-                            HStack(spacing: 4) {
-                                Image(systemName: AppIcons.levelUp)
-                                    .foregroundColor(.yellow)
-                                Text(level)
-                            }
-                            .font(.system(size: 14))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 6)
-                            .background(AppTheme.Colors.primaryDim)
-                            .foregroundColor(AppTheme.Colors.primary)
-                            .cornerRadius(20)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(AppTheme.Colors.primaryGlow, lineWidth: 1)
-                            )
-                        }
-                        .padding(.top, 8)
+                        // Weekly goal
+                        weeklyGoalCard
+                            .staggeredAppear(index: 3, isVisible: isVisible)
 
-                        HStack(spacing: 12) {
-                            ProfileStatCard(icon: AppIcons.gym, value: "\(workouts.count)", label: "Treinos")
-                            ProfileStatCard(icon: AppIcons.streak, value: "\(currentStreak)", label: "Sequência")
-                            ProfileStatCard(icon: AppIcons.trophy, value: "\(exercises.count)", label: "Exercícios")
-                        }
-                        .padding(.horizontal)
-
-                        ZStack {
-                            RoundedRectangle(cornerRadius: AppTheme.Radius.large)
-                                .fill(AppTheme.Colors.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: AppTheme.Radius.large)
-                                        .stroke(AppTheme.Colors.surfaceBorder, lineWidth: 1)
-                                )
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Volume total levantado")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.gray)
-                                    Text("\(totalVolume / 1000, specifier: "%.1f") toneladas")
-                                        .font(.system(size: 24, weight: .bold))
-                                        .foregroundColor(.white)
-                                }
-                                Spacer()
-                                Image(systemName: AppIcons.gym)
-                                    .font(.system(size: 36))
-                                    .foregroundColor(AppTheme.Colors.primary)
-                            }
-                            .padding(AppTheme.Spacing.large)
-                        }
-                        .padding(.horizontal)
-
-                        ZStack {
-                            RoundedRectangle(cornerRadius: AppTheme.Radius.large)
-                                .fill(AppTheme.Colors.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: AppTheme.Radius.large)
-                                        .stroke(AppTheme.Colors.surfaceBorder, lineWidth: 1)
-                                )
-
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: AppIcons.target)
-                                            .foregroundColor(AppTheme.Colors.primary)
-                                        Text("Meta semanal")
-                                    }
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    Spacer()
-                                    Text("\(thisWeekCount)/\(weeklyGoal) treinos")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.gray)
-                                }
-
-                                GeometryReader { geo in
-                                    ZStack(alignment: .leading) {
-                                        RoundedRectangle(cornerRadius: 4)
-                                            .fill(Color.white.opacity(0.08))
-                                            .frame(height: 8)
-                                        RoundedRectangle(cornerRadius: 4)
-                                            .fill(LinearGradient(
-                                                colors: [.purple, .purple.opacity(0.7)],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            ))
-                                            .frame(width: geo.size.width * min(Double(thisWeekCount) / Double(weeklyGoal), 1.0), height: 8)
-                                    }
-                                }
-                                .frame(height: 8)
-
-                                HStack {
-                                    Text("Ajustar meta:")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.gray)
-                                    Spacer()
-                                    Stepper("\(weeklyGoal)x por semana", value: $weeklyGoal, in: 1...7)
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.white)
-                                }
-                            }
-                            .padding(AppTheme.Spacing.large)
-                        }
-                        .padding(.horizontal)
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack(spacing: 4) {
-                                Image(systemName: AppIcons.trophy)
-                                    .foregroundColor(.yellow)
-                                Text("Conquistas")
-                            }
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
-                            .padding(.horizontal)
-
-                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                                AchievementBadge(icon: AppIcons.gym, title: "Primeiro Treino", unlocked: workouts.count >= 1)
-                                AchievementBadge(icon: AppIcons.streak, title: "3 dias seguidos", unlocked: currentStreak >= 3)
-                                AchievementBadge(icon: "bolt.fill", title: "10 treinos", unlocked: workouts.count >= 10)
-                                AchievementBadge(icon: AppIcons.gym, title: "25 treinos", unlocked: workouts.count >= 25)
-                                AchievementBadge(icon: AppIcons.trophy, title: "50 treinos", unlocked: workouts.count >= 50)
-                                AchievementBadge(icon: "crown.fill", title: "100 treinos", unlocked: workouts.count >= 100)
-                            }
-                            .padding(.horizontal)
-                        }
+                        // Achievements
+                        achievementsSection
+                            .staggeredAppear(index: 4, isVisible: isVisible)
                     }
-                    .padding(.vertical)
+                    .padding(.horizontal, AppTheme.Spacing.large)
+                    .padding(.top, AppTheme.Spacing.medium)
+                    .padding(.bottom, AppTheme.Spacing.xxxl)
                 }
             }
             .navigationTitle("Perfil")
             .navigationBarTitleDisplayMode(.large)
             .preferredColorScheme(.dark)
+            .onAppear {
+                withAnimation(AppTheme.Animation.smooth.delay(0.1)) {
+                    isVisible = true
+                }
+            }
             .alert("Seu nome", isPresented: $showingEditName) {
                 TextField("Nome", text: $tempName)
-                Button("Salvar") { userName = tempName }
-                Button("Cancelar", role: .cancel) {}
+                Button("Salvar") {
+                    userName = tempName
+                    AppTheme.Haptics.success()
+                }
+                Button("Cancelar", role: .cancel) { }
             }
         }
     }
+
+    // MARK: - Background
+    private var backgroundView: some View {
+        ZStack {
+            AppTheme.Colors.background
+                .ignoresSafeArea()
+
+            Circle()
+                .fill(AppTheme.Colors.primary.opacity(0.08))
+                .frame(width: 300, height: 300)
+                .blur(radius: 100)
+                .offset(y: -200)
+        }
+    }
+
+    // MARK: - Profile Header
+    private var profileHeader: some View {
+        VStack(spacing: AppTheme.Spacing.large) {
+            // Avatar
+            ZStack {
+                Circle()
+                    .fill(AppTheme.Colors.primaryGlow)
+                    .frame(width: 110, height: 110)
+                    .blur(radius: 20)
+
+                Circle()
+                    .fill(AppTheme.Gradients.primary)
+                    .frame(width: 90, height: 90)
+
+                Text(String(userName.prefix(1)).uppercased())
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+            }
+            .shadow(AppTheme.Shadows.glowStrong)
+
+            // Name & Level
+            VStack(spacing: AppTheme.Spacing.small) {
+                Button(action: {
+                    tempName = userName
+                    showingEditName = true
+                }) {
+                    HStack(spacing: AppTheme.Spacing.xs) {
+                        Text(userName)
+                            .font(AppTheme.Typography.headline())
+                            .foregroundColor(AppTheme.Colors.textPrimary)
+
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(AppTheme.Colors.textMuted)
+                    }
+                }
+
+                // Level badge
+                HStack(spacing: AppTheme.Spacing.xs) {
+                    Image(systemName: level.icon)
+                        .foregroundColor(level.color)
+
+                    Text(level.name)
+                        .font(AppTheme.Typography.labelMedium())
+                        .foregroundColor(level.color)
+                }
+                .padding(.horizontal, AppTheme.Spacing.medium)
+                .padding(.vertical, AppTheme.Spacing.xs)
+                .background(level.color.opacity(0.15))
+                .cornerRadius(AppTheme.Radius.pill)
+            }
+        }
+    }
+
+    // MARK: - Stats Section
+    private var statsSection: some View {
+        HStack(spacing: AppTheme.Spacing.medium) {
+            ProfileStatBox(
+                icon: "flame.fill",
+                value: "\(workouts.count)",
+                label: "Treinos",
+                color: AppTheme.Colors.streak
+            )
+
+            ProfileStatBox(
+                icon: "bolt.fill",
+                value: "\(currentStreak)",
+                label: "Sequência",
+                color: AppTheme.Colors.primary
+            )
+
+            ProfileStatBox(
+                icon: "clock.fill",
+                value: "\(totalDuration)",
+                label: "Min total",
+                color: AppTheme.Colors.success
+            )
+        }
+    }
+
+    // MARK: - Volume Card
+    private var volumeCard: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.small) {
+                HStack(spacing: AppTheme.Spacing.xs) {
+                    Image(systemName: "scalemass.fill")
+                        .foregroundColor(AppTheme.Colors.primary)
+
+                    Text("VOLUME TOTAL")
+                        .font(AppTheme.Typography.labelSmall())
+                        .foregroundColor(AppTheme.Colors.textSecondary)
+                        .textCase(.uppercase)
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: AppTheme.Spacing.xxs) {
+                    Text(String(format: "%.1f", totalVolume / 1000))
+                        .font(AppTheme.Typography.statLarge())
+                        .foregroundColor(AppTheme.Colors.textPrimary)
+
+                    Text("toneladas")
+                        .font(AppTheme.Typography.bodyMedium())
+                        .foregroundColor(AppTheme.Colors.textSecondary)
+                }
+
+                Text("levantadas ao longo da sua jornada")
+                    .font(AppTheme.Typography.caption())
+                    .foregroundColor(AppTheme.Colors.textTertiary)
+            }
+
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .fill(AppTheme.Colors.primaryDim)
+                    .frame(width: 60, height: 60)
+
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 28))
+                    .foregroundColor(AppTheme.Colors.primary)
+            }
+        }
+        .padding(AppTheme.Spacing.extraLarge)
+        .glassCard(cornerRadius: AppTheme.Radius.xxl)
+    }
+
+    // MARK: - Weekly Goal Card
+    private var weeklyGoalCard: some View {
+        VStack(spacing: AppTheme.Spacing.large) {
+            // Header
+            HStack {
+                HStack(spacing: AppTheme.Spacing.xs) {
+                    Image(systemName: "target")
+                        .foregroundColor(AppTheme.Colors.primary)
+
+                    Text("Meta Semanal")
+                        .font(AppTheme.Typography.titleSmall())
+                        .foregroundColor(AppTheme.Colors.textPrimary)
+                }
+
+                Spacer()
+
+                Text("\(thisWeekCount)/\(weeklyGoal)")
+                    .font(AppTheme.Typography.labelMedium())
+                    .foregroundColor(weeklyProgress >= 1 ? AppTheme.Colors.success : AppTheme.Colors.textSecondary)
+            }
+
+            // Progress bar
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: AppTheme.Radius.small)
+                        .fill(AppTheme.Colors.surface)
+                        .frame(height: 10)
+
+                    RoundedRectangle(cornerRadius: AppTheme.Radius.small)
+                        .fill(
+                            weeklyProgress >= 1 ?
+                            AppTheme.Gradients.successGradient :
+                                AppTheme.Gradients.primary
+                        )
+                        .frame(width: geo.size.width * weeklyProgress, height: 10)
+                        .animation(AppTheme.Animation.smooth, value: weeklyProgress)
+                }
+            }
+            .frame(height: 10)
+
+            // Goal stepper
+            HStack {
+                Text("Ajustar meta:")
+                    .font(AppTheme.Typography.bodySmall())
+                    .foregroundColor(AppTheme.Colors.textSecondary)
+
+                Spacer()
+
+                HStack(spacing: AppTheme.Spacing.medium) {
+                    Button(action: {
+                        if weeklyGoal > 1 {
+                            AppTheme.Haptics.selection()
+                            weeklyGoal -= 1
+                        }
+                    }) {
+                        Image(systemName: "minus.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(weeklyGoal > 1 ? AppTheme.Colors.primary : AppTheme.Colors.textMuted)
+                    }
+                    .disabled(weeklyGoal <= 1)
+
+                    Text("\(weeklyGoal)x")
+                        .font(AppTheme.Typography.titleMedium())
+                        .foregroundColor(AppTheme.Colors.textPrimary)
+                        .frame(width: 40)
+
+                    Button(action: {
+                        if weeklyGoal < 7 {
+                            AppTheme.Haptics.selection()
+                            weeklyGoal += 1
+                        }
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(weeklyGoal < 7 ? AppTheme.Colors.primary : AppTheme.Colors.textMuted)
+                    }
+                    .disabled(weeklyGoal >= 7)
+                }
+            }
+        }
+        .padding(AppTheme.Spacing.extraLarge)
+        .background(AppTheme.Colors.surfaceElevated)
+        .cornerRadius(AppTheme.Radius.extraLarge)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTheme.Radius.extraLarge)
+                .stroke(AppTheme.Colors.surfaceBorder, lineWidth: 1)
+        )
+    }
+
+    // MARK: - Achievements Section
+    private var achievementsSection: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.medium) {
+            SectionHeader(title: "Conquistas", subtitle: "\(unlockedCount)/6 desbloqueadas")
+
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: AppTheme.Spacing.medium) {
+                AchievementCard(
+                    icon: "figure.walk",
+                    title: "Primeiro Treino",
+                    description: "Complete 1 treino",
+                    unlocked: workouts.count >= 1
+                )
+
+                AchievementCard(
+                    icon: "flame.fill",
+                    title: "Em Chamas",
+                    description: "3 dias seguidos",
+                    unlocked: currentStreak >= 3
+                )
+
+                AchievementCard(
+                    icon: "bolt.fill",
+                    title: "10 Treinos",
+                    description: "Complete 10 treinos",
+                    unlocked: workouts.count >= 10
+                )
+
+                AchievementCard(
+                    icon: "star.fill",
+                    title: "25 Treinos",
+                    description: "Complete 25 treinos",
+                    unlocked: workouts.count >= 25
+                )
+
+                AchievementCard(
+                    icon: "trophy.fill",
+                    title: "50 Treinos",
+                    description: "Complete 50 treinos",
+                    unlocked: workouts.count >= 50
+                )
+
+                AchievementCard(
+                    icon: "crown.fill",
+                    title: "Lenda",
+                    description: "Complete 100 treinos",
+                    unlocked: workouts.count >= 100
+                )
+            }
+        }
+    }
+
+    var unlockedCount: Int {
+        var count = 0
+        if workouts.count >= 1 { count += 1 }
+        if currentStreak >= 3 { count += 1 }
+        if workouts.count >= 10 { count += 1 }
+        if workouts.count >= 25 { count += 1 }
+        if workouts.count >= 50 { count += 1 }
+        if workouts.count >= 100 { count += 1 }
+        return count
+    }
 }
 
-struct ProfileStatCard: View {
+// MARK: - Profile Stat Box
+struct ProfileStatBox: View {
     let icon: String
     let value: String
     let label: String
+    let color: Color
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: AppTheme.Radius.large)
-                .fill(AppTheme.Colors.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppTheme.Radius.large)
-                        .stroke(AppTheme.Colors.surfaceBorder, lineWidth: 1)
-                )
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(AppTheme.Colors.primary)
-                Text(value)
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundColor(.white)
-                Text(label)
-                    .font(.system(size: 11))
-                    .foregroundColor(.gray)
-            }
-            .padding(.vertical, 16)
+        VStack(spacing: AppTheme.Spacing.small) {
+            Image(systemName: icon)
+                .font(.system(size: 18))
+                .foregroundColor(color)
+
+            Text(value)
+                .font(AppTheme.Typography.statSmall())
+                .foregroundColor(AppTheme.Colors.textPrimary)
+
+            Text(label)
+                .font(AppTheme.Typography.caption())
+                .foregroundColor(AppTheme.Colors.textTertiary)
         }
         .frame(maxWidth: .infinity)
+        .padding(.vertical, AppTheme.Spacing.large)
+        .background(color.opacity(0.1))
+        .cornerRadius(AppTheme.Radius.large)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTheme.Radius.large)
+                .stroke(color.opacity(0.2), lineWidth: 1)
+        )
     }
 }
 
-struct AchievementBadge: View {
+// MARK: - Achievement Card
+struct AchievementCard: View {
     let icon: String
     let title: String
+    let description: String
     let unlocked: Bool
 
+    @State private var isAnimating = false
+
     var body: some View {
-        VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 24))
-                .foregroundColor(unlocked ? AppTheme.Colors.primary : .gray.opacity(0.3))
+        VStack(spacing: AppTheme.Spacing.small) {
+            ZStack {
+                Circle()
+                    .fill(unlocked ? AppTheme.Colors.primaryDim : AppTheme.Colors.surface)
+                    .frame(width: 50, height: 50)
+
+                Image(systemName: icon)
+                    .font(.system(size: 22))
+                    .foregroundColor(unlocked ? AppTheme.Colors.primary : AppTheme.Colors.textMuted)
+                    .scaleEffect(unlocked && isAnimating ? 1.1 : 1)
+            }
+            .shadow(unlocked ? AppTheme.Shadows.glow : AppTheme.Shadows.small)
+
             Text(title)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(unlocked ? .white : .gray.opacity(0.4))
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
+                .font(AppTheme.Typography.labelSmall())
+                .foregroundColor(unlocked ? AppTheme.Colors.textPrimary : AppTheme.Colors.textMuted)
+                .lineLimit(1)
+
+            Text(description)
+                .font(AppTheme.Typography.caption())
+                .foregroundColor(AppTheme.Colors.textTertiary)
+                .lineLimit(1)
         }
-        .padding(10)
         .frame(maxWidth: .infinity)
-        .background(unlocked ? AppTheme.Colors.primaryDim : AppTheme.Colors.surface)
-        .cornerRadius(AppTheme.Radius.medium)
+        .padding(.vertical, AppTheme.Spacing.medium)
+        .padding(.horizontal, AppTheme.Spacing.small)
+        .background(unlocked ? AppTheme.Colors.primaryDim.opacity(0.3) : AppTheme.Colors.surface)
+        .cornerRadius(AppTheme.Radius.large)
         .overlay(
-            RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
-                .stroke(unlocked ? AppTheme.Colors.primaryGlow : AppTheme.Colors.surfaceBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: AppTheme.Radius.large)
+                .stroke(
+                    unlocked ? AppTheme.Colors.primary.opacity(0.3) : AppTheme.Colors.surfaceBorder,
+                    lineWidth: 1
+                )
         )
+        .onAppear {
+            if unlocked {
+                withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
+                    isAnimating = true
+                }
+            }
+        }
     }
 }
 

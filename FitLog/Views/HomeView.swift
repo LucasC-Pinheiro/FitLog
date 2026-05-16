@@ -2,10 +2,7 @@ import SwiftUI
 import SwiftData
 
 // MARK: - Home View
-/// Home screen premium com visual moderno e animações
-/// Problema anterior: Home funcional mas sem refinamento visual
-/// Melhoria: Header premium, streak card com glow, stats animados,
-/// empty state atraente, animações de entrada e melhor hierarquia
+
 struct HomeView: View {
     @State private var showingWorkout = false
     @Query private var workouts: [Workout]
