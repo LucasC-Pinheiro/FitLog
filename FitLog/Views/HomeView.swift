@@ -74,7 +74,7 @@ struct HomeView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // Background
                 backgroundView
@@ -106,8 +106,9 @@ struct HomeView: View {
                     .padding(.bottom, AppTheme.Spacing.xxxl)
                 }
             }
-            .navigationBarHidden(true)
-            .preferredColorScheme(.dark)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .onAppear {
                 withAnimation(AppTheme.Animation.smooth.delay(0.1)) {
                     showContent = true

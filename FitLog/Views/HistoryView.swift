@@ -92,7 +92,8 @@ struct HistoryView: View {
             }
             .navigationTitle("Histórico")
             .navigationBarTitleDisplayMode(.large)
-            .preferredColorScheme(.dark)
+            .toolbarBackground(AppTheme.Colors.background, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .onAppear {
                 withAnimation(AppTheme.Animation.smooth.delay(0.1)) {
                     isVisible = true

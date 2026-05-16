@@ -115,7 +115,8 @@ struct ProgressView: View {
             }
             .navigationTitle("Progresso")
             .navigationBarTitleDisplayMode(.large)
-            .preferredColorScheme(.dark)
+            .toolbarBackground(AppTheme.Colors.background, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .onAppear {
                 if selectedExercise == nil {
                     selectedExercise = exercises.first

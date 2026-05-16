@@ -60,7 +60,8 @@ struct ExercisesView: View {
             }
             .navigationTitle("Exercícios")
             .navigationBarTitleDisplayMode(.large)
-            .preferredColorScheme(.dark)
+            .toolbarBackground(AppTheme.Colors.background, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
