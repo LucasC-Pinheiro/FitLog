@@ -1,5 +1,5 @@
 import SwiftUI
-
+import UIKit
 // MARK: - App Theme
 /// Sistema de design premium para o FitLog
 /// Inclui cores, gradientes, tipografia, espaçamentos e animações consistentes

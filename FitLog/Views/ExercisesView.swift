@@ -4,6 +4,7 @@ import SwiftData
 struct ExercisesView: View {
     @Query private var exercises: [Exercise]
     @Environment(\.modelContext) private var modelContext
+    @State private var showingAddExercise = false
     
     let muscleGroups = ["Todos", "Peito", "Costas", "Pernas", "Ombro", "Bíceps", "Tríceps", "Abdômen"]
     @State private var selectedGroup = "Todos"
@@ -64,29 +65,16 @@ struct ExercisesView: View {
             .preferredColorScheme(.dark)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: addSampleExercises) {
+                    Button(action: { showingAddExercise = true }) {
                         Image(systemName: "plus")
                             .foregroundColor(AppTheme.Colors.primary)
                     }
                 }
             }
         }
-    }
-    
-    func addSampleExercises() {
-        guard exercises.isEmpty else { return }
-        let samples = [
-            Exercise(name: "Supino Reto", muscleGroup: "Peito", equipment: "Barra", type: "Composto"),
-            Exercise(name: "Crossover", muscleGroup: "Peito", equipment: "Cabo", type: "Isolado"),
-            Exercise(name: "Puxada Frontal", muscleGroup: "Costas", equipment: "Máquina", type: "Composto"),
-            Exercise(name: "Remada Curvada", muscleGroup: "Costas", equipment: "Barra", type: "Composto"),
-            Exercise(name: "Agachamento", muscleGroup: "Pernas", equipment: "Barra", type: "Composto"),
-            Exercise(name: "Leg Press", muscleGroup: "Pernas", equipment: "Máquina", type: "Composto"),
-            Exercise(name: "Desenvolvimento", muscleGroup: "Ombro", equipment: "Halter", type: "Composto"),
-            Exercise(name: "Rosca Direta", muscleGroup: "Bíceps", equipment: "Barra", type: "Isolado"),
-            Exercise(name: "Tríceps Pulley", muscleGroup: "Tríceps", equipment: "Cabo", type: "Isolado"),
-        ]
-        samples.forEach { modelContext.insert($0) }
+        .sheet(isPresented: $showingAddExercise) {
+            AddExerciseView()
+        }
     }
 }
 
