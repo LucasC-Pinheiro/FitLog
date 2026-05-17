@@ -134,7 +134,7 @@ open FitLog.xcodeproj
 ## 📸 Screenshots
 
 <div align="center">
-<img src="Screenshot/Screens.png" alt="FitLog Screens" width="100%">
+<img src="FitLog/Screenshot/Screens.png" alt="FitLog Screens" width="100%">
 </div>
 
 ---
